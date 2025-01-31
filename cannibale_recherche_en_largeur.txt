@@ -1,0 +1,195 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+typedef struct {
+    int x, y;
+    char Position;
+} etat;
+
+typedef struct Noeud {
+    struct Noeud* suivant;
+    etat Etat;
+} noeud;
+
+typedef struct {
+    noeud* debut;
+    noeud* fin;
+} liste;
+
+liste listeNoeuds;
+liste NoeudsDejaTraites;
+int n;
+
+void initialiserListe(liste* l) {
+    l->debut = l->fin = NULL;
+}
+
+void inserer(etat etatCourant, liste* l) {
+    noeud* nouveauNoeud = (noeud*)malloc(sizeof(noeud));
+    if (!nouveauNoeud) {
+        printf("Erreur d'allocation mémoire.\n");
+        exit(1);
+    }
+    nouveauNoeud->Etat = etatCourant;
+    nouveauNoeud->suivant = NULL;
+
+    if (l->fin == NULL) {
+        l->debut = l->fin = nouveauNoeud;
+    } else {
+        l->fin->suivant = nouveauNoeud;
+        l->fin = nouveauNoeud;
+    }
+    //printf("(%c %i %i)\n",(l->debut)->Etat.Position,(l->debut)->Etat.x, (l->debut)->Etat.y);
+}
+
+etat extraire(liste* l) {
+    if (l->debut == NULL) {
+        printf("Liste vide, impossible d'extraire.\n");
+        exit(1);
+    }
+
+    noeud* temp = l->debut;
+    etat etatCourant = temp->Etat;
+    l->debut = l->debut->suivant;
+    if (l->debut == NULL) {
+        l->fin = NULL;
+    }
+    free(temp);
+    return etatCourant;
+}
+
+int etatSolution(etat e, etat etatfinal){
+    return (e.x == etatfinal.x && e.y==etatfinal.y && e.Position== etatfinal.Position);
+}
+
+int appartient(etat e, liste l) {
+    noeud* temp = l.debut;
+    while (temp != NULL) {
+        if (temp->Etat.x == e.x && temp->Etat.y == e.y) {
+            return 1;
+        }
+        temp = temp->suivant;
+    }
+    return 0;
+}
+
+void genereSuccesseurs(etat et) {
+    int x0 = et.x, y0 = et.y;
+    etat e;
+    int i = 0;
+
+    if (et.Position == 'D') {
+        if ( x0>=1 && y0>=1 && e.x-1>=e.y-1){
+          	e.x=x0-1;
+          	e.y=y0-1;
+          	e.Position='G';
+          	inserer(e,&listeNoeuds);
+
+      	}
+        if (x0 >= 1 && y0 >= 0 && e.x-1>=y0){
+            e.x = x0 - 1;
+            e.y = y0;
+            e.Position = 'G';
+            inserer(e, &listeNoeuds);
+
+        }
+        if (y0 >= 1 && x0 >= 0 && e.x>=e.y){
+            e.x = x0;
+            e.y = y0 - 1;
+            e.Position = 'G';
+            inserer(e, &listeNoeuds);
+
+        }
+        if (y0 >= 2 && x0 >= 0 && e.x>=e.y){
+            e.x = x0;
+            e.y = y0 - 2;
+            e.Position = 'G';
+            inserer(e, &listeNoeuds);
+
+        }
+        if (x0 >= 2 && y0 >= 0&& e.x-2>=y0){
+            e.x = x0 - 2;
+            e.y = y0;
+            e.Position = 'G';
+            inserer(e, &listeNoeuds);
+
+        }
+
+    }
+
+    // Générer les successeurs possibles
+    if (et.Position == 'G') {
+
+        if (x0 >= 1 && y0 >= 0&& e.x-1>=y0){
+            e.x = x0 - 1;
+            e.y = y0;
+            e.Position = 'D';
+            inserer(e, &listeNoeuds);
+            i++;
+        }
+        if (y0 >= 1 && x0 >= 0&& e.x>=e.y-1){
+            e.x = x0;
+            e.y = y0 - 1;
+            e.Position = 'D';
+            inserer(e, &listeNoeuds);
+
+        }
+        if (y0 >= 2 && x0 >= 0 && e.x>=e.y){
+            e.x = x0;
+            e.y = y0 - 2;
+            e.Position = 'D';
+            inserer(e, &listeNoeuds);
+
+        }
+        if (x0 >= 2 && y0 >= 0 && e.x-2>=y0){
+          	e.x = x0 - 2;
+          	e.y = y0;
+          	e.Position = 'D';
+          	inserer(e, &listeNoeuds);
+
+      	}
+      	if ( x0>=1 && y0>=1 && e.x-1>=e.y-1){
+          	e.x=x0-1;
+          	e.y=y0-1;
+          	e.Position='D';
+          	inserer(e,&listeNoeuds);
+
+      	}
+  	}
+}
+void rechercheLargeur(etat etatInitial, etat etatFinal) {
+    initialiserListe(&listeNoeuds);
+    initialiserListe(&NoeudsDejaTraites);
+
+    inserer(etatInitial, &listeNoeuds);
+
+    while (listeNoeuds.debut != NULL) {
+        etat courant = extraire(&listeNoeuds);
+
+        if (etatSolution(courant, etatFinal)) {
+            printf("(%c,%d, %d)\n",courant.Position,courant.x, courant.y);
+            printf("Solution trouvée: (%c,%d, %d)\n",courant.Position,courant.x, courant.y);
+            return;
+        }
+
+        if (!appartient(courant, NoeudsDejaTraites)) {
+            genereSuccesseurs(courant);
+
+            printf("(%c %i %i) \n",courant.Position, courant.x, courant.y);
+            inserer(courant, &NoeudsDejaTraites);
+            n++;
+
+        }
+    }
+    printf("Pas de solution.\n");
+}
+
+int main() {
+    etat etatInitial = {3,3,'D'};
+    etat etatFinal = {0,0,'G'};
+    rechercheLargeur(etatInitial, etatFinal);
+    printf("le nombre de noeuds : %i",n);
+    return 0;
+}
+
